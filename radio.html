@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Rádio Online</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #4e54c8, #8f94fb);
+      color: #fff;
+    }
+
+    .radio-container {
+      background: rgba(0,0,0,0.6);
+      padding: 20px 30px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    audio {
+      width: 100%;
+      margin-top: 15px;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="radio-container">
+    <h1>🎶 Rádio Local - Animes</h1>
+    
+    <select id="stations">
+      <option value="O MAIOR ESPADACHIM DO MUNDO  NERD HITS - 7 Minutoz.mp3">7 Minutoz</option>
+      <option value="Tipo Don Lorenzo - MHRAP.mp3">MHRAP</option>
+    </select>
+    
+    <audio id="player" controls autoplay>
+      <source src="https://icecast.radiofrance.fr/franceinfo-midfi.mp3" type="audio/mpeg">
+      Seu navegador não suporta áudio em HTML5.
+    </audio>
+  </div>
+
+  <script>
+    const stations = document.getElementById("stations");
+    const player = document.getElementById("player");
+
+    stations.addEventListener("change", function() {
+      player.src = this.value;
+      player.play();
+    });
+  </script>
+</body>
+</html>

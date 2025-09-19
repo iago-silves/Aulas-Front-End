@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Fórum — Login Livre</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #f4f4f4;
+    }
+
+    header {
+      background: #333;
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    h2 { margin-top: 0; }
+
+    .login-form, .forum { display: none; }
+
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #333;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover { background: #555; }
+
+    .comentario {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+    }
+    .comentario strong { color: #333; }
+    .topbar {
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .user-info { font-weight: bold; }
+    .logout-btn { width: auto; padding: 8px 12px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Fórum de Discussão</h1>
+  </header>
+
+  <div class="container">
+    <!-- Formulário de Login -->
+    <div class="login-form" id="loginForm">
+      <h2>Login</h2>
+      <input type="text" id="usuario" placeholder="Usuário (ex: joao)">
+      <input type="password" id="senha" placeholder="Senha (qualquer)">
+      <button id="btnEntrar">Entrar</button>
+      <p style="color:red;" id="erro"></p>
+      <p style="color:#666; font-size: 13px">
+        Observação: Os campos nome e senha não podem está vazia.
+      </p>
+    </div>
+
+    <!-- Área do Fórum -->
+    <div class="forum" id="forum">
+      <div class="topbar">
+        <div class="user-info" id="userInfo"></div>
+        <div style="display:flex; gap:8px;">
+          <button class="logout-btn" id="btnLogout">Sair</button>
+        </div>
+      </div>
+
+      <h2>Área do fórum</h2>
+      <textarea id="mensagem" placeholder="Escreva seu comentário..."></textarea>
+      <button id="btnPostar">Postar</button>
+
+      <h3>Comentários:</h3>
+      <div id="comentarios"></div>
+    </div>
+  </div>
+
+  <script>
+    // Elementos
+    const loginForm = document.getElementById("loginForm");
+    const forum = document.getElementById("forum");
+    const erro = document.getElementById("erro");
+    const usuarioInput = document.getElementById("usuario");
+    const senhaInput = document.getElementById("senha");
+    const btnEntrar = document.getElementById("btnEntrar");
+    const btnLogout = document.getElementById("btnLogout");
+    const btnPostar = document.getElementById("btnPostar");
+    const comentariosDiv = document.getElementById("comentarios");
+    const userInfo = document.getElementById("userInfo");
+    const mensagemInput = document.getElementById("mensagem");
+
+    // Chaves do localStorage
+    const LS_USER_KEY = "forum_current_user";
+    const LS_COMMENTS_KEY = "forum_comments_v1";
+
+    // Estado atual
+    let currentUser = null;
+    let comments = []; // array de {user, text, timeISO}
+
+    // Inicializa: tenta recuperar usuário e comentários do localStorage
+    function init() {
+      const savedUser = localStorage.getItem(LS_USER_KEY);
+      const savedComments = localStorage.getItem(LS_COMMENTS_KEY);
+
+      if (savedComments) {
+        try { comments = JSON.parse(savedComments) || []; } catch(e){ comments = []; }
+      }
+
+      if (savedUser) {
+        currentUser = savedUser;
+        mostrarForum();
+      } else {
+        mostrarLogin();
+      }
+
+      renderComentarios();
+    }
+
+    function mostrarLogin() {
+      loginForm.style.display = "block";
+      forum.style.display = "none";
+    }
+
+    function mostrarForum() {
+      loginForm.style.display = "none";
+      forum.style.display = "block";
+      userInfo.textContent = `Logado como: ${currentUser}`;
+    }
+
+    function login() {
+      const usuario = usuarioInput.value.trim();
+      const senha = senhaInput.value; 
+
+      if (!usuario) {
+        erro.textContent = "Por favor digite um nome de usuário.";
+        return;
+      }
+      if (!senha) {
+        erro.textContent = "Por favor digite uma senha.";
+        return;
+      }
+
+      currentUser = usuario;
+      localStorage.setItem(LS_USER_KEY, currentUser);
+      erro.textContent = "";
+      usuarioInput.value = "";
+      senhaInput.value = "";
+      mostrarForum();
+    }
+
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem(LS_USER_KEY);
+      mostrarLogin();
+    }
+
+    function postarComentario() {
+      const text = mensagemInput.value.trim();
+      if (!currentUser) {
+        alert("Você precisa estar logado para postar.");
+        return;
+      }
+      if (!text) return;
+
+      const novo = {
+        user: currentUser,
+        text,
+        time: new Date().toISOString()
+      };
+      comments.unshift(novo); 
+      salvarComentarios();
+      renderComentarios();
+      mensagemInput.value = "";
+    }
+
+    function renderComentarios() {
+      comentariosDiv.innerHTML = "";
+      if (comments.length === 0) {
+        comentariosDiv.innerHTML = "<p style='color:#666'>Nenhum comentário ainda.</p>";
+        return;
+      }
+
+      for (const c of comments) {
+        const div = document.createElement("div");
+        div.classList.add("comentario");
+        const data = new Date(c.time);
+        const hora = data.toLocaleString();
+        div.innerHTML = `<strong>${escapeHtml(c.user)}</strong> <small style="color:#888">(${hora})</small><div style="margin-top:6px">${escapeHtml(c.text)}</div>`;
+        comentariosDiv.appendChild(div);
+      }
+    }
+
+    function salvarComentarios() {
+      localStorage.setItem(LS_COMMENTS_KEY, JSON.stringify(comments));
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    btnEntrar.addEventListener("click", login);
+    btnLogout.addEventListener("click", logout);
+    btnPostar.addEventListener("click", postarComentario);
+
+    senhaInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") login();
+    });
+    
+    mensagemInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) postarComentario();
+    });
+
+    init();
+  </script>
+
+</body>
+</html>
